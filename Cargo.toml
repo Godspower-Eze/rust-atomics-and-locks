@@ -1,0 +1,10 @@
+[package]
+name = "rust-atomics-and-locks"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+
+[[bin]]
+name = "const_as_pointer"
+path = "src/bin/asides/const_as_pointer.rs"
