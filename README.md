@@ -1,4 +1,4 @@
-# Code from studying the book: Rust Atomics and Locks
+# Code from studying the book: [Rust Atomics and Locks](https://mara.nl/atomics/)
 
 - [Basic Threading](/src/bin/basic_threading.rs)
 - [Shared Ownership and Reference Counting](/src/bin/sofc.rs)
