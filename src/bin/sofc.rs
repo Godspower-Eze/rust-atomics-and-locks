@@ -60,7 +60,12 @@ fn main() {
     //   a type is safe to use accross threads. In other words, if a type can be used across threads
     //   then it implements this traits. 
     // - A type is Send if it can be sent to another thread. That is, if ownership of a value of that type
-    //   can be tranferred to another thread
+    //   can be tranferred to another thread.
+    // - A type is Sync if it allows a shared reference accross threads. That is, there is a guarantee that they won't be a
+    //   case where they are trying to mutate the same value. The likes i32, bool and other primitive types gives this guarantee
+    //   because there references can't be mutated and the likes Mutex handles synchronization properly making sure two mutations
+    //   aren't happening simultaneously. Cell and RefCell on the other other handle doesn't give that guarantee (notice how the function f_2 works) 
+    //   hence they are Send but not async.
 }
 
 fn x() {
