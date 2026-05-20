@@ -1,5 +1,5 @@
-use std::thread;
 use rust_atomics_and_locks::f;
+use std::thread;
 
 fn main() {
     let t1 = thread::spawn(f);
@@ -18,7 +18,9 @@ fn main() {
             println!("{n}");
         }
         println!("{:?}", numbers_1);
-    }).join().unwrap();
+    })
+    .join()
+    .unwrap();
 
     let numbers = Vec::from_iter(0..=1000);
 
