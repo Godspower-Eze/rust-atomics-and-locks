@@ -145,6 +145,25 @@ fn main() {
         // effectively forcing everything to happen serially instead"
     });
     assert_eq!(n.into_inner().unwrap(), 1000);
+    
+    let n = Mutex::new(0);
+    thread::scope(|s| {
+        for _ in 0..10 {
+            s.spawn(|| {
+                let mut guard = n.lock().unwrap();
+                for _ in 0..100 {
+                    *guard += 1;
+                }
+                // panic!()
+            });
+        }
+        // What happens when a thread panics while holding a lock?
+        // 
+        // When a thread holding a lock panics, the lock is considered poisoned and
+        // when a lock is poisoned, the Mutex will no longer be locked.
+        // And then, calling n.lock() actually locks the Mutex and returns an Err containing the value.
+    });
+    assert_eq!(n.into_inner().unwrap(), 1000);
 }
 
 fn x() {
