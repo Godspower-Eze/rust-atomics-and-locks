@@ -2,8 +2,9 @@
 use std::cell::{Cell, RefCell};
 use std::marker::PhantomData;
 use std::rc::Rc;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::thread;
+use std::time::Duration;
 
 static X: [i32; 3] = [1, 2, 3];
 
@@ -26,18 +27,18 @@ fn main() {
     let a = Arc::new([1, 2, 3]);
     let b = a.clone();
     // thread::spawn(move || dbg!(a));
-    thread::spawn(move || dbg!(b));
-    dbg!(a);
+    // thread::spawn(move || dbg!(b));
+    // dbg!(a);
 
     // Naming Clones
-    let n = Arc::new([1, 3, 5]);
-    thread::spawn({
-        let n = n.clone();
-        move || {
-            dbg!(n);
-        }
-    });
-    dbg!(n);
+    // let n = Arc::new([1, 3, 5]);
+    // thread::spawn({
+    //     let n = n.clone();
+    //     move || {
+    //         dbg!(n);
+    //     }
+    // });
+    // dbg!(n);
     // n.sort(); // Arc doesn't give mutable access to their contained value
 
     // Undefined Behaviour
@@ -75,6 +76,75 @@ fn main() {
     }
     // In this case X would have being automatically "inherited" the Send and Sync from handle being of i32 type but the second field blocks that because
     // Cell doesn't implement them.
+    let a = Rc::new(123);
+    // The code below would throw an error as RC dooesn't implement the Send trait
+    // thread::spawn(move || {
+    //     dbg!(a);
+    // });
+
+    // Locking: Mutexes and RwLocks
+    // - Mutex is short for mutual exclusion
+    let n = Mutex::new(0);
+    thread::scope(|s| {
+        for _ in 0..10 {
+            s.spawn(|| {
+                let mut guard = n.lock().unwrap();
+                for _ in 0..100 {
+                    *guard += 1;
+                }
+            });
+        }
+    });
+    assert_eq!(n.into_inner().unwrap(), 1000);
+
+    let n = Mutex::new(0);
+    thread::scope(|s| {
+        for _ in 0..10 {
+            s.spawn(|| {
+                let mut guard = n.lock().unwrap();
+                for _ in 0..100 {
+                    *guard += 1;
+                }
+                thread::sleep(Duration::from_secs(1));
+            });
+        }
+        // A Mutex works by making access to the value it protects exclusive to
+        // a single thread at every point in time and when the value is dropped
+        // the next thread picks up the value. That is, they are now able to lock
+        // and use the value.
+        //
+        // The above case shows how before dropping(out of scope), we add a one second
+        // delay before going out of scope. This ultimately shows the idea of
+        // how and when other threads gets access to a value in a Mutex.
+        //
+        // This would run in about ten seconds as every thread sleeps for one. But then, with
+        // this we don't get the value of threading. Let look at the next one below.
+    });
+    assert_eq!(n.into_inner().unwrap(), 1000);
+
+    let n = Mutex::new(0);
+    thread::scope(|s| {
+        for _ in 0..10 {
+            s.spawn(|| {
+                let mut guard = n.lock().unwrap();
+                for _ in 0..100 {
+                    println!("{}", guard);
+                    *guard += 1;
+                }
+                drop(guard); // New: drop the guard before sleeping!
+                thread::sleep(Duration::from_secs(1));
+            });
+        }
+        // Here we are explicitly dropping the guard before sleeping which gives
+        // access to the next thread before sleeping making this run in
+        // about a second. This is what parrellelism looks like and that's one
+        // of the benefit of threading.
+        //
+        // "This shows the importance of keeping the amount of time a mutex is locked as short as possible.
+        // Keeping a mutex locked longer than necessary can completely nullify any benefits of parallelism,
+        // effectively forcing everything to happen serially instead"
+    });
+    assert_eq!(n.into_inner().unwrap(), 1000);
 }
 
 fn x() {
