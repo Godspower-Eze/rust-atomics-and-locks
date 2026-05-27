@@ -164,6 +164,49 @@ fn main() {
         // And then, calling n.lock() actually locks the Mutex and returns an Err containing the value.
     });
     assert_eq!(n.into_inner().unwrap(), 1000);
+
+    let n = Mutex::new(vec![1, 2, 3]);
+    thread::scope(|s| {
+        for _ in 0..10 {
+            s.spawn(|| {
+                if let Some(x) = n.lock().unwrap().pop()  {
+                    thread::sleep(Duration::from_secs(1));
+                    f_5(x)
+                } else {
+                    return 0;
+                }
+                // Here something very interesting is happening. The
+                // program should run in about a second but it would
+                // run in about ten.
+                //
+                // Ideally the guard was going to be dropped after
+                // the statement `n.lock().unwrap().pop()` because its
+                // just a check but what actually happens is that
+                // it gets dropped after running `f_5(x)`; the `if let` block
+                // thereby holding the mutex longer than you might want to
+                // and blocking other threads waiting for access.
+                //
+                // If this was an an if statement like:
+                //
+                //    if list.lock().unwrap().pop() == Some(1) {
+                //        do_something();
+                //    }
+                //
+                // Then that wouldn't be the case but in the case of
+                // `if let` or `while let` that's how it works.
+                //
+                // The way to mitigate this is to seperate the `let`
+                // statement. That way the guard is dropped at the end
+                // of that statement before the `if let`:
+                //
+                //    let item = list.lock().unwrap().pop();
+                //    if let Some(item) = item {
+                //        f_5(item);
+                //    }
+                //
+            });
+        }
+    });
 }
 
 fn x() {
@@ -200,4 +243,8 @@ fn f_4(v: &RefCell<Vec<i32>>) {
     // - As shown below, RefCell can be borrowed and mutated unless Cell where we had to totally replace the value
     // - But, similar to Cell, this can also only be used in a single thread
     v.borrow_mut().push(1); // We can modify the `Vec` directly.
+}
+
+fn f_5(x: i32) -> i32 {
+    x * x
 }
