@@ -207,6 +207,10 @@ fn main() {
             });
         }
     });
+
+    // - RwLocks(reader-write locks) - Like Mutex, just one exclusive access, it provides 
+    //   multiple read (shared) access and one write (exclusive) access. provides .read()
+    //   .write() instead of .lock()
 }
 
 fn x() {
