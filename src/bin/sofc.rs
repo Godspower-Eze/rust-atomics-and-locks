@@ -59,7 +59,7 @@ fn main() {
 
     // Thread Safety: Send and Sync
     // - Send and Sync are special traits that when implemented tells the compiler that
-    //   a type is safe to use across threads. In other words, if a type can be used across threads
+    //   a type is safe to be used across threads. In other words, if a type can be used across threads
     //   then it implements this traits.
     // - A type is Send if it can be sent to another thread. That is, if ownership of a value of that type
     //   can be tranferred to another thread.
@@ -68,14 +68,14 @@ fn main() {
     //   gives this guarantee because there references can't be mutated and the likes of Mutex handles synchronization properly
     //   making sure two mutations aren't happening simultaneously. Cell and RefCell on the other
     //   hand doesn't give that guarantees (notice how the function f_2 works) hence they are Send but not async.
-    // - Both of these traits are auto traits which means they are automatically implemented for your types baseed on their
-    //   fields. A struct with fields that are all Send and Sync it itself also Send and Sync
+    // - Both of these traits are auto traits which means they are automatically implemented for your types based on the types they contain.
+    //   A struct with fields that are all Send and Sync it itself also Send and Sync
     struct X {
         handle: i32,
         _not_sync: PhantomData<Cell<()>>,
     }
-    // In this case X would have being automatically "inherited" the Send and Sync from handle being of i32 type but the second field blocks that because
-    // Cell doesn't implement them.
+    // In this case X would have being automatically "inherited" the Send and Sync from handle being of i32 type
+    // but the second field blocks that because Cell doesn't implement them.
     let a = Rc::new(123);
     // The code below would throw an error as RC dooesn't implement the Send trait
     // thread::spawn(move || {
@@ -114,10 +114,10 @@ fn main() {
         // and use the value.
         //
         // The above case shows how before dropping(out of scope), we add a one second
-        // delay before going out of scope. This ultimately shows the idea of
-        // how and when other threads gets access to a value in a Mutex.
+        // delay. This ultimately shows the idea of how and when other
+        // threads gets access to a value in a Mutex.
         //
-        // This would run in about ten seconds as every thread sleeps for one. But then, with
+        // This would run in about ten seconds as every thread sleeps for one. With
         // this we don't get the value of threading. Let look at the next one below.
     });
     assert_eq!(n.into_inner().unwrap(), 1000);
@@ -145,7 +145,7 @@ fn main() {
         // effectively forcing everything to happen serially instead"
     });
     assert_eq!(n.into_inner().unwrap(), 1000);
-    
+
     let n = Mutex::new(0);
     thread::scope(|s| {
         for _ in 0..10 {
@@ -158,7 +158,7 @@ fn main() {
             });
         }
         // What happens when a thread panics while holding a lock?
-        // 
+        //
         // When a thread holding a lock panics, the lock is considered poisoned and
         // when a lock is poisoned, the Mutex will no longer be locked.
         // And then, calling n.lock() actually locks the Mutex and returns an Err containing the value.
@@ -169,7 +169,7 @@ fn main() {
     thread::scope(|s| {
         for _ in 0..10 {
             s.spawn(|| {
-                if let Some(x) = n.lock().unwrap().pop()  {
+                if let Some(x) = n.lock().unwrap().pop() {
                     thread::sleep(Duration::from_secs(1));
                     f_5(x)
                 } else {
@@ -208,7 +208,7 @@ fn main() {
         }
     });
 
-    // - RwLocks(reader-write locks) - Like Mutex, just one exclusive access, it provides 
+    // - RwLocks(reader-write locks) - Like Mutex, just one exclusive access, it provides
     //   multiple read (shared) access and one write (exclusive) access. provides .read()
     //   .write() instead of .lock()
 }
@@ -244,7 +244,7 @@ fn f_3(v: &Cell<Vec<i32>>) {
 }
 
 fn f_4(v: &RefCell<Vec<i32>>) {
-    // - As shown below, RefCell can be borrowed and mutated unless Cell where we had to totally replace the value
+    // - As shown below, RefCell can be borrowed and mutated unlike Cell where we had to totally replace the value
     // - But, similar to Cell, this can also only be used in a single thread
     v.borrow_mut().push(1); // We can modify the `Vec` directly.
 }
